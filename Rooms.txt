@@ -1,0 +1,201 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
+using HotelBAL;
+using HotelEntities;
+using HotelExceceptions;
+using Microsoft.Win32;
+
+namespace Hotel
+{
+	/// <summary>
+	/// Interaction logic for AddRoomUI.xaml
+	/// </summary>
+	public partial class AddRoomUI : Window
+	{
+		public AddRoomUI()
+		{
+			InitializeComponent();
+		}
+
+		private void btn_addtodb_Click(object sender, RoutedEventArgs e)
+		{
+			MemoryStream ms = new MemoryStream();
+			PictureBox.
+
+			RoomDetails room = new RoomDetails
+			{
+
+				Hotel_Id = rpg_hid_txt.Text,
+				Room_Type = RoomTypeCombo.SelectedValue.ToString(),
+				Per_Night_Rate = int.Parse(rrate_txt.Text),
+				Availability = bool.Parse(ravailability_txt.Text),
+				Photo = 
+		};
+			HotelBALlayer balobj = new HotelBALlayer();
+			balobj.AddRoomBAL(room);
+		}
+
+		private void btn_addimg_Click(object sender, RoutedEventArgs e)
+		{
+			OpenFileDialog op = new OpenFileDialog();
+			op.Title = "Select a picture";
+			op.Filter = "All supported graphics|*.jpg;*.jpeg;*.png|" +
+			  "JPEG (*.jpg;*.jpeg)|*.jpg;*.jpeg|" +
+			  "Portable Network Graphic (*.png)|*.png";
+			if (op.ShowDialog() == true)
+			{
+				PictureBox.Source = new BitmapImage(new Uri(op.FileName));
+			}
+		}
+	}
+}
+====================================================================================
+
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Data;
+using System.Data.SqlClient;
+using System.Configuration;
+using HotelEntities;
+using HotelExceceptions;
+
+
+namespace HotelDAL
+{
+    public class HotelDALlayer
+    {
+        static string conStr = string.Empty;
+        SqlConnection con = null;
+        SqlCommand cmd = null;
+        static HotelDALlayer()
+        {
+            conStr = ConfigurationManager.ConnectionStrings["ConStr"].ConnectionString;
+        }
+        public HotelDALlayer()
+        {
+            con = new SqlConnection(conStr);
+        }
+        public string AddUserDAL(customerNew cust, string password)
+        {
+            string retId = string.Empty;
+            cmd = new SqlCommand();
+            cmd.Connection = con;
+            cmd.CommandText = "HMS.usp_insert_user";
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.Add("@retId", SqlDbType.VarChar, 4);
+            cmd.Parameters["@retId"].Direction = ParameterDirection.Output;
+        
+           
+            cmd.Parameters.AddWithValue("@password", password);
+            cmd.Parameters.AddWithValue("@role", "USER");
+            cmd.Parameters.AddWithValue("@user_name", cust.Username);
+            cmd.Parameters.AddWithValue("@mobile_no", cust.mobileNo);
+            cmd.Parameters.AddWithValue("@email", cust.Email);
+            cmd.Parameters.AddWithValue("@phone", "51515554");
+            cmd.Parameters.AddWithValue("@address", cust.Address);
+            con.Open();
+            int noOfRowsAffected = cmd.ExecuteNonQuery();
+            retId = cmd.Parameters["@retId"].Value.ToString();
+            if (con.State == ConnectionState.Open)
+            {
+                con.Close();
+            }
+            return retId;
+        }
+
+		public bool ValidateUserDal(string userName, string password)
+		{
+			bool validated = false;
+			cmd = new SqlCommand();
+			cmd.Connection = con;
+			cmd.CommandText = "HMS.usp_validate_user";
+			cmd.CommandType = CommandType.StoredProcedure;
+			cmd.Parameters.Add("@ret", SqlDbType.Int);
+			cmd.Parameters["@ret"].Direction = ParameterDirection.Output;
+
+			cmd.Parameters.AddWithValue("@user_name", userName);
+			cmd.Parameters.AddWithValue("@pwd", password);
+
+			con.Open();
+			int noOfRowsAffected = cmd.ExecuteNonQuery();
+			validated = int.Parse(cmd.Parameters["@ret"].Value.ToString()) == 1;
+			return validated;
+		}
+
+		public string AddHotelDAL(Hotels hotel)
+		{
+			string retId = string.Empty;
+			cmd = new SqlCommand();
+			cmd.Connection = con;
+			cmd.CommandText = "HMS.usp_insert_hotel";
+			cmd.CommandType = CommandType.StoredProcedure;
+			cmd.Parameters.Add("@retId", SqlDbType.VarChar, 4);
+			cmd.Parameters["@retId"].Direction = ParameterDirection.Output;
+
+			cmd.Parameters.AddWithValue("@city", hotel.City);
+			cmd.Parameters.AddWithValue("@name", hotel.Hotel_Name);
+			cmd.Parameters.AddWithValue("@address", hotel.Address);
+			cmd.Parameters.AddWithValue("@description", hotel.Description);
+			cmd.Parameters.AddWithValue("@avg_rate_per_night", hotel.Avg_Rate_Per_Night);
+			cmd.Parameters.AddWithValue("@phone_no1",hotel.Phone_No1);
+			cmd.Parameters.AddWithValue("@phone_no2", hotel.Phone_No2);
+			cmd.Parameters.AddWithValue("@rating", hotel.Rating);
+			cmd.Parameters.AddWithValue("@email", hotel.Email);
+			cmd.Parameters.AddWithValue("@fax", hotel.Fax);
+
+			con.Open();
+			int noOfRowsAffected = cmd.ExecuteNonQuery();
+			retId = cmd.Parameters["@retId"].Value.ToString();
+			if (con.State == ConnectionState.Open)
+			{
+				con.Close();
+			}
+			return retId;
+		}
+
+
+		public string AddRoomDAL(RoomDetails rooms)
+		{
+			string retroomId = string.Empty;
+			cmd = new SqlCommand();
+			cmd.Connection = con;
+			cmd.CommandText = "HMS.usp_insert_room";
+			cmd.CommandType = CommandType.StoredProcedure;
+			cmd.Parameters.Add("@retroomId", SqlDbType.VarChar, 4);
+			cmd.Parameters["@retroomId"].Direction = ParameterDirection.Output;
+			cmd.Parameters.AddWithValue("@hotel_id", rooms.Hotel_Id);
+			cmd.Parameters.AddWithValue("@room_type", rooms.Room_Type);
+			cmd.Parameters.AddWithValue("@per_night_rate", rooms.Per_Night_Rate);
+			cmd.Parameters.AddWithValue("@availability", rooms.Availability);
+			cmd.Parameters.Add("@photo", SqlDbType.Image);
+			cmd.Parameters.AddWithValue("@photo", rooms.Photo);
+
+			con.Open();
+			int noOfRowsAffected = cmd.ExecuteNonQuery();
+			retroomId = cmd.Parameters["@retroomId"].Value.ToString();
+			if (con.State == ConnectionState.Open)
+			{
+				con.Close();
+			}
+			return retroomId;
+		}
+
+	}
+}
